@@ -4,6 +4,7 @@ const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const LodashModuleReplacementPlugin = require('lodash-webpack-plugin');
+const LicensePlugin = require('webpack-license-plugin');
 
 // uncomment here and in plugins to analyze webpack bundle size
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
@@ -85,5 +86,6 @@ module.exports = {
       // nothing loads.
       minify: false
     }),
+    new LicensePlugin(),
   ],
 };
