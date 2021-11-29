@@ -35,10 +35,19 @@ spec:
 
 ```yaml
 ---
-# Server "web-http": matches the http port for pods in the web service, by
-# selecting over the app=web-svc label.
 apiVersion: policy.linkerd.io/v1beta1
 kind: GRPCInterface
+metadata:
+  namespace: emojivoto
+  name: emoji-grpc
+spec:
+  service: EmojiService
+  rpcs:
+    - name: ListAll
+    - name: FindByShortcode
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: GRPCServerBinding
 metadata:
   namespace: emojivoto
   name: emoji-grpc
