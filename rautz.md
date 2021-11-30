@@ -2,154 +2,150 @@
 
 Let's start with a few servers:
 
+## HTTP interfaces
+
+Let's use an example HTTP service that exercises a variety of request types:
+
+### API
+
+```text
+GET / HTTP/1.1
+host: example.com
+```
+
+```text
+GET /api/params?key=value&label HTTP/1.1
+host: example.com
+```
+
+### Resources
+
 ```yaml
 apiVersion: policy.linkerd.io/v1beta1
 kind: Server
 metadata:
-  namespace: emojivoto
-  name: emoji-grpc
+  namespace: eg
+  name: example-http
   labels:
-    emojivoto/api: internal-grpc
+    app: example
+    protocol: http
 spec:
   podSelector:
     matchLabels:
-      app: emoji-svc
-  port: grpc
-  proxyProtocol: gRPC
-
----
-# Server "web-http": matches the http port for pods in the web service, by
-# selecting over the app=web-svc label.
-apiVersion: policy.linkerd.io/v1beta1
-kind: Server
-metadata:
-  namespace: emojivoto
-  name: web-http
-spec:
-  podSelector:
-    matchLabels:
-      app: web-svc
+      app: example
   port: http
   proxyProtocol: HTTP/1
 ```
 
 ```yaml
----
+apiVersion: policy.linkerd.io/v1beta1
+kind: HTTPInterface
+metadata:
+  namespace: eg
+  name: example-http
+spec:
+  paths:
+    - path: /
+      methods:
+        - GET
+        - HEAD
+        - OPTIONS
+      labels:
+        foo: bar
+```
+
+```yaml
+apiVersion: policy.linkerd.io/v1beta1
+kind: HTTPServerBinding
+metadata:
+  namespace: eg
+  name: example-http
+spec:
+  interfaceName: example-http
+  servers:
+    - name: example-http
+    #- matchLabels:
+    #    app: example
+    #    protocol: http
+  hosts:
+    - name: example.default.svc.cluster.local
+    - name: example.com
+    - suffix: "*.example.com"
+```
+
+## GRPC interfaces
+
+Let's use an example protobuf service that exercises a variety of RPC types:
+
+```proto3
+message Request {}
+
+message Response {}
+
+service Example {
+  // A simple unary endpoint.
+  //
+  // - Response timeouts: yes
+  // - Retryable: yes
+  rpc Ping(Request) returns(Response) {}
+
+  // Streams requests.
+  //
+  // - Response timeouts: limits time to response message from initial request
+  //   message
+  // - Retryable: no
+  rpc Notify(stream Request) returns(Response) {}
+
+  // Streams responses.
+  //
+  // - Response timeouts: limits time to first response message.
+  // - Retryable: when no response has been received
+  rpc Watch(Request) returns(stream Response) {}
+
+  // Streams requests and responses.
+  //
+  // - Response timeouts: limits time to first response message from initial
+  //   request message
+  // - Retryable: no
+  rpc Duplex(stream Request) returns(stream Response) {}
+}
+```
+
+```yaml
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  namespace: eg
+  name: example-grpc
+  labels:
+    app: example
+    protocol: grpc
+  podSelector:
+    matchLabels:
+      app: example
+  port: grpc
+  proxyProtocol: gRPC
+```
+
+```yaml
 apiVersion: policy.linkerd.io/v1beta1
 kind: GRPCInterface
 metadata:
-  namespace: emojivoto
-  name: emoji-grpc
+  namespace: eg
+  name: example-grpc
 spec:
-  service: EmojiService
+  service: Example
   rpcs:
-    - name: ListAll
-    - name: FindByShortcode
----
-apiVersion: policy.linkerd.io/v1beta1
-kind: GRPCServerBinding
-metadata:
-  namespace: emojivoto
-  name: emoji-grpc
-spec:
-  service: EmojiService
-  rpcs:
-    - name: ListAll
-    - name: FindByShortcode
-```
-
----
-
-```yaml
----
-# ServerAuthorization "web-public": allows unauthenticated traffic
-# to the web-http Server, so that the web service can serve HTTP requests
-# to anyone.
-apiVersion: policy.linkerd.io/v1beta1
-kind: ServerAuthorization
-metadata:
-  namespace: emojivoto
-  name: web-public
-  labels:
-    app.kubernetes.io/part-of: emojivoto
-    app.kubernetes.io/name: web
-    app.kubernetes.io/version: v11
-spec:
-  server:
-    name: web-http
-  client:
-    unauthenticated: true
-    networks:
-      - cidr: 0.0.0.0/0
-      - cidr: ::/0
-
----
-# Server "prom": matches the Prometheus port of the emoji, web, and voting
-# services, by selecting over the pods with corresponding app labels.
-apiVersion: policy.linkerd.io/v1beta1
-kind: Server
-metadata:
-  namespace: emojivoto
-  name: prom
-  labels:
-    app.kubernetes.io/part-of: emojivoto
-    app.kubernetes.io/version: v11
-spec:
-  port: prom
-  podSelector:
-    matchExpressions:
-      - key: app
-        operator: In
-        values: [emoji-svc, web-svc, voting-svc]
-  proxyProtocol: HTTP/1
-
----
-# ServerAuthorization "prom-prometheus": allows unauthenticated traffic to the
-# "prom" Server, so that metrics scrapes can come from anywhere.
-apiVersion: policy.linkerd.io/v1beta1
-kind: ServerAuthorization
-metadata:
-  namespace: emojivoto
-  name: prom-prometheus
-  labels:
-    app.kubernetes.io/part-of: emojivoto
-    app.kubernetes.io/version: v11
-spec:
-  server:
-    name: prom
-  client:
-    unauthenticated: true
-
----
-# Server "admin": matches the admin port for every pod in this namespace
-apiVersion: policy.linkerd.io/v1beta1
-kind: Server
-metadata:
-  namespace: emojivoto
-  name: admin
-  labels:
-    app.kubernetes.io/part-of: emojivoto
-    app.kubernetes.io/version: v11
-spec:
-  port: linkerd-admin
-  podSelector:
-    matchLabels: {} # every pod
-  proxyProtocol: HTTP/1
-
----
-# ServerAuthorization "admin-everyone": allows unauthenticated access to the
-# "admin" Server, so that Kubernetes health checks can get through.
-apiVersion: policy.linkerd.io/v1beta1
-kind: ServerAuthorization
-metadata:
-  namespace: emojivoto
-  name: admin-everyone
-  labels:
-    app.kubernetes.io/part-of: emojivoto
-    app.kubernetes.io/version: v11
-spec:
-  server:
-    name: admin
-  client:
-    unauthenticated: true
+    - name: Ping
+    - name: Notify
+      request:
+        stream: true
+    - name: Watch
+      response:
+        stream: true
+    - name: Duplex
+      request:
+        stream: true
+      response:
+        stream: true
 ```
