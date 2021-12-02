@@ -84,7 +84,7 @@ jobs:
         echo "TAG=$(CI_FORCE_CLEAN=1 bin/root-tag)" >> $GITHUB_ENV
         echo "DOCKER_BUILDKIT_CACHE=${{ runner.temp }}/.buildx-cache" >> $GITHUB_ENV
     - name: Cache docker layers
-      uses: actions/cache@c64c572235d810460d0d6876e9c705ad5002b353
+      uses: actions/cache@937d24475381cd9c75ae6db12cb4e79714b926ed
       with:
         path: ${{ env.DOCKER_BUILDKIT_CACHE }}
         key: policy-controller-${{ matrix.arch }}-${{ env.TAG }}
@@ -143,7 +143,7 @@ jobs:
       uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
     - uses: actions/setup-go@331ce1d993939866bb63c32c6cbbfd48fa76fc57
       with:
-        go-version: '1.16'
+        go-version: '1.17'
     - name: Download image archives
       uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
       with:
@@ -177,7 +177,7 @@ jobs:
       uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
     - uses: actions/setup-go@331ce1d993939866bb63c32c6cbbfd48fa76fc57
       with:
-        go-version: '1.16'
+        go-version: '1.17'
     - name: Set environment variables from scripts
       run: |
         TAG="$(CI_FORCE_CLEAN=1 bin/root-tag)"
@@ -203,7 +203,7 @@ jobs:
       uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
     - uses: actions/setup-go@331ce1d993939866bb63c32c6cbbfd48fa76fc57
       with:
-        go-version: '1.16'
+        go-version: '1.17'
     - name: Install linkerd CLI
       run: |
         TAG="$(CI_FORCE_CLEAN=1 bin/root-tag)"
