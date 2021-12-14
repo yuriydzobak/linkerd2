@@ -1,151 +1,75 @@
 # Route-oriented policy
 
-Let's start with a few servers:
+## Goals
 
-## HTTP interfaces
+* Support per-route polices on servers:
+  * Authorization
+  * Timeouts
+  * Add header
+  * Remove header
+* Support per-route polices on clients:
+  * Retries
+  * Timeouts
+  * Add header
+  * Remove header
+* Replace `ServiceProfile`
+  * Decouple server and client policies
+  * Support inbound policies for `Server`s (so that servers may provide a
+    canonical route reference).
+  * Let service owners publish an interface that can be used by clients to
+    configure client-specific policies.
 
-Let's use an example HTTP service that exercises a variety of request types:
+## Proposal
 
-### API
+We introduce a new concept to proxies: traffic **labeling**. As each connection
+or request is processed by the proxy, it applies a series of labeling rules to
+produce a map of key-val labels. Labels are similar to kubernetes `ObjectMeta`
+labels.
 
-```text
-GET / HTTP/1.1
-host: example.com
-```
+As the proxy applies policies--authorization, timeouts, retries, header
+modification, etc--these policies are applied by selecting over
+connection/request labels.
 
-```text
-GET /api/params?key=value&label HTTP/1.1
-host: example.com
-```
+Each connection/request processed by a client or server ***should*** have a
+uniform set of labels.
 
-### Resources
+* Should there be a standard set of labels that are always applied for a given
+  resource (e.g. `tcp/client-ip`, `http/method`, `grpc/service`)
+
+### Use cases
+
+#### Authorization
+
+#### Timeouts
+
+#### Retries
+
+#### Metrics
+
+* Omitting/rewriting high-cardinality labels
+
+### Performance considerations
+
+* Is it necessary to allocate a new set of labels for each event?
+  * Vs hash lookup times to avoid allocation?
+* Can label selection be amortized?
+  * Easier if all possible label values are known ahead of time?
+
+---
 
 ```yaml
-apiVersion: policy.linkerd.io/v1beta1
-kind: Server
+apiVersion: rautz.l5d.io/v1alpha1
+kind: HTTPLabeler
 metadata:
-  namespace: eg
-  name: example-http
-  labels:
-    app: example
-    protocol: http
+  name: web
+  namespace: emojivoto
 spec:
-  podSelector:
-    matchLabels:
-      app: example
-  port: http
-  proxyProtocol: HTTP/1
-```
-
-```yaml
-apiVersion: policy.linkerd.io/v1beta1
-kind: HTTPInterface
-metadata:
-  namespace: eg
-  name: example-http
-spec:
-  paths:
-    - path: /
-      methods:
-        - GET
-        - HEAD
-        - OPTIONS
+  labelers:
+    - kind: HttpMethod
+      values: ["GET", "HEAD", "OPTIONS", "DELETE", "PUT"]
       labels:
-        foo: bar
-```
-
-```yaml
-apiVersion: policy.linkerd.io/v1beta1
-kind: HTTPServerBinding
-metadata:
-  namespace: eg
-  name: example-http
-spec:
-  interfaceName: example-http
-  servers:
-    - name: example-http
-    #- matchLabels:
-    #    app: example
-    #    protocol: http
-  hosts:
-    - name: example.default.svc.cluster.local
-    - name: example.com
-    - suffix: "*.example.com"
-```
-
-## GRPC interfaces
-
-Let's use an example protobuf service that exercises a variety of RPC types:
-
-```proto3
-message Request {}
-
-message Response {}
-
-service Example {
-  // A simple unary endpoint.
-  //
-  // - Response timeouts: yes
-  // - Retryable: yes
-  rpc Ping(Request) returns(Response) {}
-
-  // Streams requests.
-  //
-  // - Response timeouts: limits time to response message from initial request
-  //   message
-  // - Retryable: no
-  rpc Notify(stream Request) returns(Response) {}
-
-  // Streams responses.
-  //
-  // - Response timeouts: limits time to first response message.
-  // - Retryable: when no response has been received
-  rpc Watch(Request) returns(stream Response) {}
-
-  // Streams requests and responses.
-  //
-  // - Response timeouts: limits time to first response message from initial
-  //   request message
-  // - Retryable: no
-  rpc Duplex(stream Request) returns(stream Response) {}
-}
-```
-
-```yaml
-apiVersion: policy.linkerd.io/v1beta1
-kind: Server
-metadata:
-  namespace: eg
-  name: example-grpc
-  labels:
-    app: example
-    protocol: grpc
-  podSelector:
-    matchLabels:
-      app: example
-  port: grpc
-  proxyProtocol: gRPC
-```
-
-```yaml
-apiVersion: policy.linkerd.io/v1beta1
-kind: GRPCInterface
-metadata:
-  namespace: eg
-  name: example-grpc
-spec:
-  service: Example
-  rpcs:
-    - name: Ping
-    - name: Notify
-      request:
-        stream: true
-    - name: Watch
-      response:
-        stream: true
-    - name: Duplex
-      request:
-        stream: true
-      response:
-        stream: true
+        idempotent: "true"
+    - kind: HttpHeader
+      header: "l5d-dst-canonical"
+      exists: true
 ```
