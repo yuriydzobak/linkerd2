@@ -36,11 +36,9 @@ func TestRender(t *testing.T) {
 		EnableH2Upgrade:         true,
 		WebhookFailurePolicy:    "WebhookFailurePolicy",
 		HeartbeatSchedule:       "1 2 3 4 5",
-		InstallNamespace:        true,
 		Identity:                defaultValues.Identity,
 		NodeSelector:            defaultValues.NodeSelector,
 		Tolerations:             defaultValues.Tolerations,
-		Namespace:               "Namespace",
 		ClusterDomain:           "cluster.local",
 		ClusterNetworks:         "ClusterNetworks",
 		ImagePullPolicy:         "ImagePullPolicy",
@@ -226,7 +224,7 @@ func TestRender(t *testing.T) {
 		{withControlPlaneTracingValues, "install_controlplane_tracing_output.golden", values.Options{}},
 		{withCustomRegistryValues, "install_custom_registry.golden", values.Options{}},
 		{withCustomDestinationGetNetsValues, "install_default_override_dst_get_nets.golden", values.Options{}},
-		{defaultValues, "install_custom_domain.golden", values.Options{Values: []string{"namespace=l5d"}}},
+		{defaultValues, "install_custom_domain.golden", values.Options{}},
 		{defaultValues, "install_values_file.golden", values.Options{ValueFiles: []string{filepath.Join("testdata", "install_config.yaml")}}},
 		{defaultValues, "install_default_token.golden", values.Options{Values: []string{"identity.serviceAccountTokenProjection=false"}}},
 	}
@@ -234,8 +232,12 @@ func TestRender(t *testing.T) {
 	for i, tc := range testCases {
 		tc := tc // pin
 		t.Run(fmt.Sprintf("%d: %s", i, tc.goldenFileName), func(t *testing.T) {
+			valuesOverrides, err := tc.options.MergeValues(nil)
+			if err != nil {
+				t.Fatalf("Failed to get values overrides: %v", err)
+			}
 			var buf bytes.Buffer
-			if err := render(&buf, tc.values, "", tc.options); err != nil {
+			if err := render(&buf, tc.values, "", valuesOverrides); err != nil {
 				t.Fatalf("Failed to render templates: %v", err)
 			}
 			testDataDiffer.DiffTestdata(t, tc.goldenFileName, buf.String())

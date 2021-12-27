@@ -1,5 +1,89 @@
 # Changes
 
+## edge-21.12.4
+
+This release adds support for custom HTTP methods in the viz stats
+(i.e CLI and Dashboard). Additionally, it also includes various
+smaller improvements.
+
+* Added support for custom HTTP methods in the `linkerd-viz` stats
+* Updated the health checker to pull trust root from the `linkerd-identity-trust-roots`
+  configmap to support cases where they are generated externally (thanks @wim-de-groot)
+* Removed unnecessary `installNamespace` bool flag from the
+  `linkerd-control-plane` chart (thanks @mikutas)
+* Updated the `install` command to error if container runtime check fails
+* Updated various dependencies across the project (thanks @dependabot)
+
+## edge-21.12.3
+
+This edge release contains a few improvements to the CLI commands and a major
+change around Helm charts.
+
+* **Breaking change**
+
+The `linkerd2` chart has been deprecated in favor of the `linkerd-crds` and
+`linkerd-control-plane` charts. The former takes care of installing all the
+required CRDs and the latter everything else. Of important note is that, as per
+Helm best practice, we're no longer creating the linkerd namespace. Users
+require to do that manually, or have the Helm tool do it explicitly. So the
+install procedure would look something like this:
+
+```bash
+helm install linkerd-crds -n linkerd --create-namespace linkerd/linkerd-crds
+
+helm install linkerd-control-plane -n linkerd \
+  --set-file identityTrustAnchorsPEM=ca.crt \
+  --set-file identity.issuer.tls.crtPEM=issuer.crt \
+  --set-file identity.issuer.tls.keyPEM=issuer.key \
+  linkerd/linkerd-control-plane
+```
+
+In order to upgrade, please delete your previously installed `linkerd2` chart
+and install the new charts as explained above.
+
+Although the charts for the main extensions (viz, multicluster, jaeger,
+linkerd2-cni) were not deprecated, they also stopped creating their namespace
+and users are required to uninstall and reinstall them anew, e.g:
+
+```bash
+helm install linkerd-viz -n linkerd-viz --create-namespace linkerd/linkerd-viz
+```
+
+* Added a new `--obfuscate` flag to `linkerd diagnostics proxy-metrics` to
+  obfuscate potentially private information in the output (thanks
+  @ahmedalhulaibi!)
+* Fixed formatting of the recommended value for `--set clusterNetworks` in the
+  `linkerd check` output when that parameter doesn't contain all the node
+  podCIDRs (thanks @ElvinEfendi!)
+* Skipped evicted pods in `linkerd viz check` and `linkerd jaeger check`, to
+  avoid the checks fail unnecessarily
+* Removed some no longer used environment variables from the proxy's manifest
+
+## edge-21.12.2
+
+This edge removes the default SMI functionality that is included in
+installations now that the linkerd-smi extension provides these resources. It
+also relaxes the `proxy-init`'s `privileged` value to only be set to `true` when
+needed by certain installation configurations.
+
+Along with some bug fixes, the repository's issue and feature request templates
+have been updated to forms; check them when opening a [new
+issue](https://github.com/linkerd/linkerd2/issues/new/choose)! (thanks
+@mikutas).
+
+* Removed SMI functionality in the default Linkerd installation; this is now
+  part of the linkerd-smi extension
+* Fixed autocompletion of the `--context` flag (thanks @mikutas!)
+* Added support for conditionally setting `proxy-init`'s `privileged: true` only
+  when needed (thanks @alex-berger!)
+* Added support for controlling opaque ports through the Server resource
+* Fixed an issue where `linkerd check` would compare proxy versions of
+  uninjected pods leading to incorrect errors
+* Relaxed extension checks so that the CLI still works when not all extension
+  proxies are healthy
+* Added the `--default-inbound-policy` flag to `linkerd inject` for setting a
+  non-default inbound policy on injected workloads (thanks @ahmedalhulaibi!)
+
 ## edge-21.12.1
 
 This edge release enables by default `EndpointSlices` in the destination

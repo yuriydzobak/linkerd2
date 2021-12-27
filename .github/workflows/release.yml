@@ -59,7 +59,7 @@ jobs:
     # https://github.com/actions/upload-artifact/issues/8
     - name: Upload artifact
       if: matrix.component == 'cli-bin'
-      uses: actions/upload-artifact@27121b0bdffd731efa15d66772be8dc71245d074
+      uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
       with:
         name: image-archives
         path: /home/runner/archives
@@ -141,11 +141,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-    - uses: actions/setup-go@331ce1d993939866bb63c32c6cbbfd48fa76fc57
+    - uses: actions/setup-go@424fc82d43fa5a37540bae62709ddcc23d9520d4
       with:
         go-version: '1.17'
     - name: Download image archives
-      uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
+      uses: actions/download-artifact@f023be2c48cc18debc3bacd34cb396e0295e2869
       with:
         name: image-archives
         path: image-archives
@@ -164,7 +164,8 @@ jobs:
         - external-prometheus-deep
         - external-resources
         - helm-deep
-        - helm-upgrade
+        # Skipping Helm upgrade test given chart in 2.11 is backwards-incompatible
+        #- helm-upgrade
         - uninstall
         - upgrade-edge
         - upgrade-stable
@@ -175,7 +176,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-    - uses: actions/setup-go@331ce1d993939866bb63c32c6cbbfd48fa76fc57
+    - uses: actions/setup-go@424fc82d43fa5a37540bae62709ddcc23d9520d4
       with:
         go-version: '1.17'
     - name: Set environment variables from scripts
@@ -201,7 +202,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-    - uses: actions/setup-go@331ce1d993939866bb63c32c6cbbfd48fa76fc57
+    - uses: actions/setup-go@424fc82d43fa5a37540bae62709ddcc23d9520d4
       with:
         go-version: '1.17'
     - name: Install linkerd CLI
@@ -257,7 +258,7 @@ jobs:
         args: pack bin/win/linkerd.nuspec
     - name: Chocolatey - upload package
       if: startsWith(github.ref, 'refs/tags/stable')
-      uses: actions/upload-artifact@27121b0bdffd731efa15d66772be8dc71245d074
+      uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
       with:
         name: choco
         path: ./linkerd.*.nupkg
@@ -281,7 +282,7 @@ jobs:
         extract_release_notes NOTES.md
     - name: Download choco package
       if: startsWith(github.ref, 'refs/tags/stable')
-      uses: actions/download-artifact@3be87be14a055c47b01d3bd88f8fe02320a9bb60
+      uses: actions/download-artifact@f023be2c48cc18debc3bacd34cb396e0295e2869
       with:
         name: choco
         path: choco
