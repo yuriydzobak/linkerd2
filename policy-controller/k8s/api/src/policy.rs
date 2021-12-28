@@ -1,5 +1,8 @@
 pub mod authz;
+pub mod route;
 pub mod server;
 
-pub use self::authz::{ServerAuthorization, ServerAuthorizationSpec};
-pub use self::server::{Server, ServerSpec};
+pub use self::{
+    authz::{ServerAuthorization, ServerAuthorizationSpec},
+    server::{Server, ServerSpec},
+};

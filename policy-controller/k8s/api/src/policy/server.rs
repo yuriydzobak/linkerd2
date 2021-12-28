@@ -1,4 +1,4 @@
-use super::super::labels;
+use crate::labels;
 use kube::CustomResource;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
