@@ -30,24 +30,6 @@ As the proxy applies policies--authorization, timeouts, retries, header
 modification, etc--these policies are applied by selecting over
 connection/request labels.
 
-Each connection/request processed by a client or server ***should*** have a
-uniform set of labels.
-
-* Should there be a standard set of labels that are always applied for a given
-  resource (e.g. `tcp/client-ip`, `http/method`, `grpc/service`)
-
-### Use cases
-
-#### Authorization
-
-#### Timeouts
-
-#### Retries
-
-#### Metrics
-
-* Omitting/rewriting high-cardinality labels
-
 ### Performance considerations
 
 * Is it necessary to allocate a new set of labels for each event?
@@ -73,3 +55,7 @@ spec:
       header: "l5d-dst-canonical"
       exists: true
 ```
+
+## References
+
+* <https://gateway-api.sigs.k8s.io/v1alpha2/references/policy-attachment/>
