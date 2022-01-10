@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
         - name: pause
-          image: gcr.io/google_containers/pause
+          image: gcr.io/google_containers/pause:3.2
       serviceAccountName: linkerd-gateway
 ---
 apiVersion: v1
@@ -214,7 +214,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: multicluster-psp
+  name: linkerd-multicluster-psp
   namespace: linkerd-multicluster
   labels:
     linkerd.io/extension: multicluster
